@@ -69,6 +69,11 @@ class BlogController extends Controller
 
     public function show(Blog $blog)
     {
+        // authorization check
+        if ($blog->user_id !== Auth::id()) {
+            return response()->json(['error' => 'Unauthorized - You cannot view this blog post.'], 403);
+        }
+
         // Use Redis to cache the blog details for 10 minutes
         $cacheKey = "blog:{$blog->id}";
 
@@ -165,6 +170,10 @@ class BlogController extends Controller
     public function update(UpdateBlogRequest $request, Blog $blog)
     {
         try {
+            // authorization check
+            if ($blog->user_id !== Auth::id()) {
+                return response()->json(['error' => 'Unauthorized - You cannot update this blog post.'], 403);
+            }
 
             $data = $request->validated();
 
@@ -233,6 +242,11 @@ class BlogController extends Controller
     public function destroy(Blog $blog)
     {
         try {
+            // authorization check
+            if ($blog->user_id !== Auth::id()) {
+                return response()->json(['error' => 'Unauthorized - You cannot delete this blog post.'], 403);
+            }
+
             // delete blog image
             if ($blog->image && str_contains($blog->image, url('/images/blogs'))) {
                 $existingFilePath = public_path('images/blogs/' . basename($blog->image));
@@ -245,11 +259,6 @@ class BlogController extends Controller
 
             // clear cache
             Cache::flush();
-            // // Invalidate the blog detail cache
-            // Cache::forget("blog:{$blog->id}");
-
-            // // Invalidate blog list cache for the current user
-            // Cache::forget("blogs:user:" . Auth::id() . ":page:*");
 
             return response()->json([
                 'message' => 'Blog post deleted successfully.'
